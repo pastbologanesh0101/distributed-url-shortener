@@ -152,6 +152,52 @@ python3 -m unittest discover -s tests -v
 CI (`.github/workflows/tests.yml`) runs the full suite plus the demo
 script as a smoke test on Python 3.11 and 3.12 on every push/PR.
 
+## Troubleshooting / FAQ
+
+**Q: I added a node and `owning_nodes_snapshot()`/reads still show old
+data on nodes that shouldn't own those keys anymore. Is that a bug?**
+
+No — `ring.add_node()` only updates the ring's key-to-node *mapping*.
+Nothing physically moves data until you call
+`router.rebalance_after_add(new_node_id)`, which copies the keys the
+new node now owns and prunes stale copies elsewhere. If you call
+`add_node` directly on `Router` without following it with
+`rebalance_after_add`, the new node is a legitimate ring member but
+starts out empty, and old replicas linger until you rebalance. This
+mirrors real systems, where ring membership changes and data movement
+are separate steps (the latter is often async/throttled).
+
+**Q: I called `router.mark_down(node_id)` but writes/reads to that node
+still raise `NodeDownError` even after I never called `mark_up`. Is
+something stuck?**
+
+That's expected — `mark_down`/`mark_up` are the *only* things that
+flip a node's up/down flag, and they're sticky until you explicitly
+call the other one. There's no timeout or auto-recovery, since this
+project models the failure/recovery *mechanism* (failover +
+resync-on-add), not a specific failure-detector policy.
+
+**Q: Why did `click_counts(short_code)` return different numbers for
+different replicas after I brought a node back up with `mark_up`?**
+
+This is the eventual-consistency model working as designed, not a bug:
+`redirect()` only increments the click count on replicas that were
+*reachable at the time of that specific call*. `mark_up` makes a node
+accept traffic again, but it does not retroactively replay clicks it
+missed while down. If you need replicas to agree again, you'd need an
+explicit resync step (the project doesn't implement click-count
+anti-entropy — only `rebalance_after_add` resyncs record
+existence/values, not historical click deltas).
+
+**Q: Why does `Router.create()` sometimes raise `NoAvailableReplicaError`
+even though the cluster has nodes?**
+
+It only raises that when *every* node in the key's preference list
+(primary + replicas) is currently marked down — a partial outage still
+succeeds by writing to whichever replicas are up. If you're seeing it
+unexpectedly, check whether you marked down more nodes than your
+`replicas` count can tolerate.
+
 ## Project layout
 
 ```
