@@ -1,5 +1,9 @@
 # Distributed URL Shortener
 
+[![tests](https://github.com/pastbologanesh0101/distributed-url-shortener/actions/workflows/tests.yml/badge.svg)](https://github.com/pastbologanesh0101/distributed-url-shortener/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](.github/workflows/tests.yml)
+
 A **simulated distributed system**, not just another CRUD app. This
 project shows how a URL shortener would actually be sharded and
 replicated across a cluster of nodes: consistent hashing, replica
