@@ -150,7 +150,8 @@ python3 -m unittest discover -s tests -v
 - rebalance-after-add moving few keys with zero data loss
 
 CI (`.github/workflows/tests.yml`) runs the full suite plus the demo
-script as a smoke test on Python 3.11 and 3.12 on every push/PR.
+script as a smoke test on Python 3.11, 3.12, and 3.13 on every
+push/PR.
 
 ## Troubleshooting / FAQ
 
