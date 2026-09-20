@@ -79,7 +79,12 @@ class Router:
     def create(self, long_url: str, short_code: Optional[str] = None) -> str:
         """Create a short code for long_url, writing it to all live nodes
         in its preference list. Raises NoAvailableReplicaError only if
-        every replica is down."""
+        every replica is down, and ValueError if long_url or a
+        caller-supplied short_code is blank."""
+        if not long_url or not long_url.strip():
+            raise ValueError("long_url must be a non-empty string")
+        if short_code is not None and not short_code.strip():
+            raise ValueError("short_code must not be blank")
         if short_code is None:
             short_code = self.generate_code()
         pref = self.preference_list(short_code)

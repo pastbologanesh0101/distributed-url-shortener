@@ -109,6 +109,18 @@ class TestRouterBasics(unittest.TestCase):
         self.assertNotIn(victim, self.router.nodes)
         self.assertEqual(self.router.read("leavetest"), "https://example.com/leaving")
 
+    def test_create_rejects_blank_long_url_and_short_code(self):
+        """A real caller could accidentally pass an empty string for
+        long_url (e.g. an empty form field) or a blank custom alias --
+        both should fail fast with a clear error instead of silently
+        creating an unusable short link."""
+        with self.assertRaises(ValueError):
+            self.router.create("")
+        with self.assertRaises(ValueError):
+            self.router.create("   ")
+        with self.assertRaises(ValueError):
+            self.router.create("https://example.com/ok", short_code="   ")
+
     def test_create_fails_when_all_target_replicas_down(self):
         pref = self.router.preference_list("willfail")
         for node_id in pref:
