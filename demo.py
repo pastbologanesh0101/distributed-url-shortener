@@ -12,15 +12,18 @@ Run with:  python demo.py
 Or with a custom cluster shape, e.g.:
            python demo.py --nodes 10 --replicas 2 --urls 1000 --seed 42
 """
+from __future__ import annotations
+
 import argparse
 import random
 from collections import Counter
+from typing import List, Optional, Sequence
 
 from dus.naive import naive_mod_node
 from dus.router import Router
 
 
-def parse_args(argv=None) -> argparse.Namespace:
+def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse CLI flags for the demo's cluster shape.
 
     Kept separate from main() so it can be unit-tested (see
@@ -40,7 +43,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def print_distribution(router: Router, codes):
+def print_distribution(router: Router, codes: List[str]) -> None:
+    """Print the number of primary keys each node in `router` currently
+    owns, for the given short codes."""
     counts = Counter()
     for code in codes:
         pref = router.preference_list(code)
@@ -49,7 +54,9 @@ def print_distribution(router: Router, codes):
         print(f"    {node_id}: {counts.get(node_id, 0)} primary keys")
 
 
-def main(argv=None):
+def main(argv: Optional[Sequence[str]] = None) -> None:
+    """Run the scripted end-to-end demo described in the module
+    docstring, using the cluster shape from `parse_args(argv)`."""
     args = parse_args(argv)
     if args.seed is not None:
         random.seed(args.seed)
@@ -138,7 +145,9 @@ def main(argv=None):
     print("=" * 72)
 
 
-def _safe_read(router: Router, code: str):
+def _safe_read(router: Router, code: str) -> Optional[str]:
+    """Like router.read(), but returns None instead of raising -- used
+    to count how many keys are still reachable while a node is down."""
     try:
         return router.read(code)
     except Exception:
