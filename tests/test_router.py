@@ -92,6 +92,23 @@ class TestRouterBasics(unittest.TestCase):
         for code, expected_url in pairs:
             self.assertEqual(self.router.read(code), expected_url)
 
+    def test_remove_node_excludes_it_from_preference_lists_but_key_stays_readable(self):
+        """Removing a node from the cluster (permanent departure, not a
+        transient failure) must drop it from the ring immediately, and a
+        key that was also replicated elsewhere must still be readable
+        from its remaining replicas -- removal is not the same code path
+        as mark_down and isn't covered by the failover tests above."""
+        self.router.create("https://example.com/leaving", short_code="leavetest")
+        pref_before = self.router.preference_list("leavetest")
+        victim = pref_before[0]
+
+        self.router.remove_node(victim)
+
+        pref_after = self.router.preference_list("leavetest")
+        self.assertNotIn(victim, pref_after)
+        self.assertNotIn(victim, self.router.nodes)
+        self.assertEqual(self.router.read("leavetest"), "https://example.com/leaving")
+
     def test_create_fails_when_all_target_replicas_down(self):
         pref = self.router.preference_list("willfail")
         for node_id in pref:

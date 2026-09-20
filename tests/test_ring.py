@@ -100,6 +100,14 @@ class TestConsistentHashRing(unittest.TestCase):
         self.assertGreater(frac_naive, 0.8)
         self.assertLess(frac_ring, frac_naive)
 
+    def test_empty_ring_returns_no_owner(self):
+        """A ring with no nodes added yet must fail closed: no primary
+        owner and no preference list, rather than raising or returning
+        a stale/garbage node id."""
+        ring = ConsistentHashRing(vnodes=10)
+        self.assertIsNone(ring.get_node("some-key"))
+        self.assertEqual(ring.get_preference_list("some-key", 3), [])
+
     def test_naive_mod_node_is_deterministic_and_spreads_keys(self):
         self.assertEqual(naive_mod_node("abc", 4), naive_mod_node("abc", 4))
         buckets = {naive_mod_node(f"k{i}", 4) for i in range(50)}
