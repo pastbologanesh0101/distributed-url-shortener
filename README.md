@@ -111,6 +111,17 @@ linearizability, which is directly asserted in
 python3 demo.py
 ```
 
+The cluster shape is configurable via CLI flags instead of editing the
+script, e.g. to try a bigger cluster with a lower replication factor
+and a reproducible run:
+
+```bash
+python3 demo.py --nodes 10 --replicas 2 --urls 1000 --seed 42
+```
+
+Run `python3 demo.py --help` for the full flag list (`--nodes`,
+`--replicas`, `--urls`, `--vnodes`, `--seed`).
+
 Example output (abridged):
 
 ```

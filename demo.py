@@ -9,11 +9,35 @@ and measures how few keys actually had to move -- compared against
 what naive mod-N hashing would have required.
 
 Run with:  python demo.py
+Or with a custom cluster shape, e.g.:
+           python demo.py --nodes 10 --replicas 2 --urls 1000 --seed 42
 """
+import argparse
+import random
 from collections import Counter
 
 from dus.naive import naive_mod_node
 from dus.router import Router
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    """Parse CLI flags for the demo's cluster shape.
+
+    Kept separate from main() so it can be unit-tested (see
+    tests/test_demo.py) without running the whole scripted demo.
+    """
+    parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
+    parser.add_argument("--nodes", type=int, default=6, help="starting cluster size (default: 6)")
+    parser.add_argument("--replicas", type=int, default=3, help="replication factor R (default: 3)")
+    parser.add_argument("--urls", type=int, default=300, help="number of short URLs to create (default: 300)")
+    parser.add_argument("--vnodes", type=int, default=150, help="virtual nodes per physical node (default: 150)")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="seed random.seed() for reproducible short codes across runs (default: unseeded)",
+    )
+    return parser.parse_args(argv)
 
 
 def print_distribution(router: Router, codes):
@@ -25,16 +49,20 @@ def print_distribution(router: Router, codes):
         print(f"    {node_id}: {counts.get(node_id, 0)} primary keys")
 
 
-def main():
+def main(argv=None):
+    args = parse_args(argv)
+    if args.seed is not None:
+        random.seed(args.seed)
+
     print("=" * 72)
     print("Distributed URL Shortener -- demo")
     print("=" * 72)
 
-    NUM_NODES = 6
-    REPLICAS = 3
-    NUM_URLS = 300
+    NUM_NODES = args.nodes
+    REPLICAS = args.replicas
+    NUM_URLS = args.urls
 
-    router = Router(replicas=REPLICAS, vnodes=150)
+    router = Router(replicas=REPLICAS, vnodes=args.vnodes)
     for i in range(NUM_NODES):
         router.add_node(f"node-{i}")
 
@@ -71,7 +99,7 @@ def main():
     print(f"    Node {victim!r} restored.")
 
     # --- add a node and measure remapping ---------------------------------
-    print(f"\n[4] Adding a 7th node to the cluster...")
+    print(f"\n[4] Adding a new node to the {NUM_NODES}-node cluster (-> {NUM_NODES + 1} nodes)...")
     before = {code: router.preference_list(code)[0] for code in codes}
     router.add_node("node-new")
     moved_to_new = router.rebalance_after_add("node-new")
